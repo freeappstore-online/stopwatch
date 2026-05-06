@@ -54,6 +54,28 @@ export default function App() {
     localStorage.setItem(LAPS_KEY, JSON.stringify(laps));
   }, [laps]);
 
+  // Keyboard shortcuts: Space = start/stop, L = lap, R = reset.
+  // Skip if a form input is focused so we don't hijack typing.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement | null)?.tagName?.toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "select") return;
+      if (e.key === " ") {
+        e.preventDefault();
+        startStop();
+      } else if (e.key.toLowerCase() === "l") {
+        e.preventDefault();
+        lap();
+      } else if (e.key.toLowerCase() === "r") {
+        e.preventDefault();
+        reset();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [running, elapsed, laps]);
+
   function startStop() {
     if (running) {
       accumulated.current += Date.now() - (startedAt.current ?? Date.now());
@@ -101,8 +123,11 @@ export default function App() {
         >
           Stopwatch
         </h1>
-        <p style={{ color: "var(--muted)", marginBottom: "2rem" }}>
+        <p style={{ color: "var(--muted)", marginBottom: "0.5rem" }}>
           Tap <strong>Lap</strong> while running to record splits. Everything stays in your browser.
+        </p>
+        <p style={{ color: "var(--muted)", fontSize: "0.85rem", marginBottom: "2rem" }}>
+          Shortcuts: <kbd>Space</kbd> start/stop &middot; <kbd>L</kbd> lap &middot; <kbd>R</kbd> reset
         </p>
 
         <div
