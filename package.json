@@ -1,0 +1,14 @@
+{
+  "name": "stopwatch",
+  "private": true,
+  "packageManager": "pnpm@10.30.3",
+  "engines": { "node": ">=22" },
+  "pnpm": { "onlyBuiltDependencies": ["esbuild"] },
+  "scripts": {
+    "dev": "pnpm --filter @stopwatch/web dev",
+    "build": "pnpm --filter @stopwatch/web build",
+    "preview": "pnpm --filter @stopwatch/web preview",
+    "typecheck": "pnpm --filter @stopwatch/web exec tsc -b",
+    "test": "pnpm --filter @stopwatch/web test"
+  }
+}
