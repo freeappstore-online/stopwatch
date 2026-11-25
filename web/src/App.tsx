@@ -8,6 +8,7 @@ interface Lap {
 }
 
 const LAPS_KEY = "stopwatch:laps";
+const CLOCK_KEY = "stopwatch:clock";
 
 function format(ms: number): string {
   const m = Math.floor(ms / 60000);
@@ -28,16 +29,42 @@ function loadLaps(): Lap[] {
   }
 }
 
+interface Clock {
+  accumulated: number;      // ms banked before the current run
+  startedAt: number | null; // wall-clock start of the current run, null when stopped
+}
+
+function loadClock(): Clock {
+  try {
+    const raw = localStorage.getItem(CLOCK_KEY);
+    if (!raw) return { accumulated: 0, startedAt: null };
+    const c = JSON.parse(raw) as Clock;
+    return {
+      accumulated: Number.isFinite(c.accumulated) ? c.accumulated : 0,
+      startedAt: Number.isFinite(c.startedAt) ? c.startedAt : null,
+    };
+  } catch {
+    return { accumulated: 0, startedAt: null };
+  }
+}
+
+function saveClock(c: Clock) {
+  localStorage.setItem(CLOCK_KEY, JSON.stringify(c));
+}
+
 export default function App() {
-  const [running, setRunning] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
+  const [initial] = useState(loadClock);
+  const [running, setRunning] = useState(initial.startedAt !== null);
+  const [elapsed, setElapsed] = useState(
+    initial.accumulated + (initial.startedAt !== null ? Date.now() - initial.startedAt : 0),
+  );
   const [laps, setLaps] = useState<Lap[]>(() => loadLaps());
 
   // Anchor the timer to a wall-clock baseline so background tabs and
   // long pauses don't drift the display. Re-render every 33ms (~30fps)
   // for a smooth centisecond ticker; source of truth is Date.now().
-  const startedAt = useRef<number | null>(null);
-  const accumulated = useRef(0);
+  const startedAt = useRef<number | null>(initial.startedAt);
+  const accumulated = useRef(initial.accumulated);
 
   useEffect(() => {
     if (!running) return;
@@ -85,12 +112,14 @@ export default function App() {
       startedAt.current = Date.now();
       setRunning(true);
     }
+    saveClock({ accumulated: accumulated.current, startedAt: startedAt.current });
   }
 
   function reset() {
     setRunning(false);
     accumulated.current = 0;
     startedAt.current = null;
+    saveClock({ accumulated: 0, startedAt: null });
     setElapsed(0);
     setLaps([]);
   }
